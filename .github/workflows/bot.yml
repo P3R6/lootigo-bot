@@ -1,0 +1,45 @@
+name: Free Games Bot
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run bot
+        env:
+          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:    ${{ secrets.TELEGRAM_CHAT_ID }}
+          GAMERPOWER_GAME_URL: ${{ secrets.GAMERPOWER_GAME_URL }}
+          GAMERPOWER_LOOT_URL: ${{ secrets.GAMERPOWER_LOOT_URL }}
+        run: python main.py
+
+      - name: Save seen IDs to repo
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add seen_ids.json
+          git diff --staged --quiet && echo "No changes" && exit 0
+          git commit -m "chore: update seen_ids [skip ci]"
+          git pull --rebase origin main
+          git push
